@@ -1,9 +1,10 @@
-name: OrangeFox - Build AOSP
+name: OrangeFox - Build
 
 # Credits to:
 # TeamWin
 # OrangeFox
 # azwhikaru (Recovery Builder Template)
+# NSR-XINE
 # And all contributors from repositories used
 
 on:
@@ -13,51 +14,30 @@ on:
         description: 'OrangeFox Manifest Branch'
         required: true
         default: '12.1'
-        type: choice
-        options:
-          - 12.1
-          - 11.0
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
-        default: 'https://github.com/NSR-Resources/android_device_xiaomi_lisa_aosp-ofox'
-      KERNEL_TREE:
-        description: 'OrangeFox Kernel Tree'
-        required: true
-        default: 'https://github.com/911-NSR/android_kernel_qcom_sm8350'
+        default: 'https://github.com/nathannxx/recovery_device_xiaomi_tanzanite.git'
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
         default: 'fox_12.1'
-      KERNEL_TREE_BRANCH:
-        description: 'OrangeFox Kernel Tree Branch'
-        required: true
-        default: 'lineage-23.0'
       DEVICE_PATH:
         description: 'Specify your Device Path'
         required: true
-        default: 'device/xiaomi/lisa'
-      KERNEL_PATH:
-        description: 'Specify your Kernel Path'
-        required: true
-        default: 'kernel/xiaomi/sm8350'
+        default: 'device/xiaomi/tanzanite'
       DEVICE_NAME:
         description: 'Specify your Device Codename'
         required: true
-        default: 'lisa'
+        default: 'tanzanite'
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
         default: 'vendorboot'
-        type: choice
-        options:
-          - boot
-          - recovery
-          - vendorboot
 
 jobs:
   build:
-    name: Build OFR by ${{ github.actor }}
+    name: Build OFR by ${{ github.actor }} ${{ github.run_id }}
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -90,7 +70,6 @@ jobs:
           sudo bash setup/android_build_env.sh
 
       - name: Set-up Manifest
-        if: ${{ inputs.MANIFEST_BRANCH == '11.0' || inputs.MANIFEST_BRANCH == '12.1' }}
         run: |
           mkdir -p "${GITHUB_WORKSPACE}/OrangeFox"
           cd "${GITHUB_WORKSPACE}/OrangeFox"
@@ -107,13 +86,6 @@ jobs:
           cd "${{ inputs.DEVICE_PATH }}"
           echo "DEVICE_TREE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - name: Clone Kernel Tree
-        run: |
-          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
-          git clone "${{ inputs.KERNEL_TREE }}" -b "${{ inputs.KERNEL_TREE_BRANCH }}" "./${{ inputs.KERNEL_PATH }}"
-          cd "${{ inputs.KERNEL_PATH }}"
-          echo "KERNEL_TREE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
       - name: Building OrangeFox
         run: |
           cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
@@ -127,7 +99,7 @@ jobs:
 
       - name: Set Release Properties
         run: |
-          echo "BUILD_DATE=$(TZ=Asia/Dubai date +%Y%m%d)" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$(TZ=Asia/Jakarta date +%Y%m%d)" >> "$GITHUB_ENV"
           cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
           DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
           if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
@@ -143,10 +115,9 @@ jobs:
             OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
           name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
           tag_name: ${{ github.run_id }}
-          prerelease: true
+          prerelease: false
           body: |
             ## OrangeFox Recovery Build - Unofficial
             Build: fox_${{ inputs.MANIFEST_BRANCH }}
             Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
             Device tree commit: [${{ env.DEVICE_TREE_COMMIT }}](${{ env.DEVICE_TREE_URL }}/commit/${{ env.DEVICE_TREE_COMMIT }})
-            Kernel commit: ${{ env.KERNEL_TREE_COMMIT }}
