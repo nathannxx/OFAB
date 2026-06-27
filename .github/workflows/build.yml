@@ -89,6 +89,10 @@ jobs:
       - name: Building OrangeFox
         run: |
           cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
+          cd bootable/recovery/gui/theme/portrait_hdpi/images/Default/About
+          rm maintainer.png
+          wget https://raw.githubusercontent.com/nathannxx/OFAB/refs/heads/main/img/maintainer.png
+          cd -
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
